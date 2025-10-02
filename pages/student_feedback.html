@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Menu Recommender Prototype</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0; padding: 0;
+    background: #f7f9fb; color: #333;
+  }
+  header {
+    background: #2c3e50; color: #fff;
+    padding: 1rem; text-align: center;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  section {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  h2 { margin-top: 0; }
+  .control-group {
+    margin-bottom: 1rem;
+  }
+  label {
+    display: block;
+    margin-bottom: .3rem;
+  }
+  input[type=range] {
+    width: 100%;
+  }
+  ul { padding-left: 1.2rem; }
+  li { margin: .4rem 0; }
+  @media (max-width: 700px) {
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Smart Menu Recommender (Prototype)</h1>
+</header>
+<main>
+  <section>
+    <h2>Controls</h2>
+    <div class="control-group">
+      <label for="ratingWeight">Rating Weight: <span id="ratingWeightVal">0.5</span></label>
+      <input type="range" id="ratingWeight" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label for="wasteWeight">Waste Weight: <span id="wasteWeightVal">0.5</span></label>
+      <input type="range" id="wasteWeight" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label for="bias">Recent Feedback Bias (EWMA): <span id="biasVal">0.6</span></label>
+      <input type="range" id="bias" min="0" max="1" step="0.01" value="0.6">
+    </div>
+  </section>
+
+  <section>
+    <h2>Top Picks</h2>
+    <ul id="topPicks"></ul>
+  </section>
+
+  <section>
+    <h2>Watch/Reduce (Waste-prone)</h2>
+    <ul id="watchReduce"></ul>
+  </section>
+
+  <section>
+    <h2>Swap Suggestions</h2>
+    <ul id="swapSuggestions"></ul>
+  </section>
+
+  <section>
+    <h2>Inventory Actions</h2>
+    <ul id="inventoryActions"></ul>
+  </section>
+</main>
+
+<script>
+// Mock data
+const items = [
+  { name: "Chicken Alfredo", category: "main", ratings:[4,5,5,4], waste:[0.05,0.1,0.08], stock: 20, perish:0.4 },
+  { name: "Veggie Burger", category: "main", ratings:[3,3,4,3], waste:[0.2,0.25,0.3], stock: 15, perish:0.5 },
+  { name: "Broccoli", category: "side_veg", ratings:[2,3,2,2], waste:[0.4,0.35,0.3], stock: 10, perish:0.7 },
+  { name: "Carrots", category: "side_veg", ratings:[4,4,5,4], waste:[0.1,0.1,0.15], stock: 25, perish:0.6 },
+  { name: "Caesar Salad", category: "side_salad", ratings:[4,5,4,4], waste:[0.2,0.1,0.15], stock: 8, perish:0.8 },
+  { name: "Fruit Cup", category: "side_fruit", ratings:[5,5,4,5], waste:[0.05,0.05,0.1], stock: 30, perish:0.9 }
+];
+
+// Controls
+const ratingWeightSlider = document.getElementById("ratingWeight");
+const wasteWeightSlider = document.getElementById("wasteWeight");
+const biasSlider = document.getElementById("bias");
+
+ratingWeightSlider.oninput = () => { document.getElementById("ratingWeightVal").textContent = ratingWeightSlider.value; update(); };
+wasteWeightSlider.oninput = () => { document.getElementById("wasteWeightVal").textContent = wasteWeightSlider.value; update(); };
+biasSlider.oninput = () => { document.getElementById("biasVal").textContent = biasSlider.value; update(); };
+
+function ewma(values, alpha) {
+  let s = values[0];
+  for(let i=1;i<values.length;i++) {
+    s = alpha*values[i] + (1-alpha)*s;
+  }
+  return s;
+}
+
+function update() {
+  const rw = parseFloat(ratingWeightSlider.value);
+  const ww = parseFloat(wasteWeightSlider.value);
+  const bias = parseFloat(biasSlider.value);
+
+  let scored = items.map(it=>{
+    const ratingAvg = ewma(it.ratings, bias)/5; // normalized 0-1
+    const wasteAvg = ewma(it.waste, bias);
+    const invWaste = 1 - wasteAvg; // less waste = higher
+    const score = rw*ratingAvg + ww*invWaste;
+    return {...it, ratingAvg, wasteAvg, score};
+  });
+
+  // Top Picks
+  const top = [...scored].sort((a,b)=>b.score-a.score).slice(0,3);
+  document.getElementById("topPicks").innerHTML = top.map(it=>`<li>${it.name} (score ${(it.score).toFixed(2)})</li>`).join("");
+
+  // Watch/Reduce
+  const reduce = scored.filter(it=>it.wasteAvg>=0.25);
+  document.getElementById("watchReduce").innerHTML = reduce.map(it=>`<li>${it.name} (waste ${(it.wasteAvg*100).toFixed(0)}%)</li>`).join("");
+
+  // Swap Suggestions (within category, margin ≥ 0.18)
+  let swaps = [];
+  const byCat = {};
+  scored.forEach(it=>{
+    if(!byCat[it.category]) byCat[it.category]=[];
+    byCat[it.category].push(it);
+  });
+  for(const cat in byCat) {
+    const arr=byCat[cat].sort((a,b)=>b.score-a.score);
+    if(arr.length>1) {
+      for(let i=1;i<arr.length;i++) {
+        if(arr[0].score-arr[i].score>=0.18 && arr[0].stock>0) {
+          swaps.push(`Swap ${arr[i].name} → ${arr[0].name}`);
+        }
+      }
+    }
+  }
+  document.getElementById("swapSuggestions").innerHTML = swaps.map(s=>`<li>${s}</li>`).join("");
+
+  // Inventory Actions
+  let actions=[];
+  scored.forEach(it=>{
+    if(it.wasteAvg>=0.25) actions.push(`${it.name}: Reduce plan (waste ${(it.wasteAvg*100).toFixed(0)}%)`);
+    if(it.score>=0.75 && it.stock>20) actions.push(`${it.name}: Increase plan (high score, surplus stock)`);
+    if(it.perish>=0.8 && it.score>=0.55) actions.push(`${it.name}: Use soon (perishable + decent score)`);
+  });
+  document.getElementById("inventoryActions").innerHTML = actions.map(a=>`<li>${a}</li>`).join("");
+}
+
+update();
+</script>
+</body>
+</html>
