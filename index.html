@@ -1,8 +1,63 @@
-<html>
+<!doctype html>
+<html lang="en">
     <head>
-        <title>My Website</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>OCA — Cafeteria Tools</title>
+        <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
-        <h1>My Website</h1>
+        <header class="site-header">
+            <div class="container header-inner">
+                <a class="brand" href="index.html">OCA Cafeteria</a>
+                <nav class="main-nav">
+                    <a href="pages/scan_food.html">Scan Food</a>
+                    <a href="pages/smart_menu.html">Smart Menu</a>
+                    <a href="pages/waste_tracker.html">Waste Tracker</a>
+                    <a href="pages/student_feedback.html">Feedback</a>
+                    <a href="pages/admin.html" class="admin-link">Admin</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="container">
+            <section class="hero">
+                <h1>Welcome to OCA Cafeteria Tools</h1>
+                <p class="lead">Simple web tools for scanning food, building smart menus, tracking waste, and collecting student feedback.</p>
+                <div class="cta-row">
+                    <a class="btn" href="pages/scan_food.html">Start Scanning</a>
+                    <a class="btn outline" href="pages/smart_menu.html">Explore Smart Menu</a>
+                </div>
+            </section>
+
+            <section class="features">
+                <article class="card">
+                    <h2>Scan Food</h2>
+                    <p>Quickly scan items and collect nutritional or inventory data.</p>
+                    <p><a href="pages/scan_food.html">Open</a></p>
+                </article>
+                <article class="card">
+                    <h2>Smart Menu</h2>
+                    <p>Create menus that adapt to preferences and reduce waste.</p>
+                    <p><a href="pages/smart_menu.html">Open</a></p>
+                </article>
+                <article class="card">
+                    <h2>Waste Tracker</h2>
+                    <p>Track leftovers and measure waste over time.</p>
+                    <p><a href="pages/waste_tracker.html">Open</a></p>
+                </article>
+                <article class="card">
+                    <h2>Student Feedback</h2>
+                    <p>Collect quick feedback to improve meals and service.</p>
+                    <p><a href="pages/student_feedback.html">Open</a></p>
+                </article>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <small>© OCA Cafeteria — Built for demonstration. Open <code>index.html</code> in your browser to view.</small>
+            </div>
+        </footer>
     </body>
 </html>
