@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Menu Recommender — Prototype</title>
+  <style>
+    :root{ --bg:#f7fbff; --card:#fff; --accent:#0b74da; --danger:#ff6b6b; --muted:#667; }
+    body{font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f0f6ff,white);margin:0;padding:28px;color:#123}
+    .wrap{max-width:980px;margin:0 auto}
+    h1{margin:0 0 12px;color:var(--accent)}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:20px}
+  /* focus outlines for keyboard users */
+  .control-btn:focus, .btn:focus, input[type="range"]:focus{ outline:3px solid rgba(11,116,218,0.18); outline-offset:3px }
+    .card{background:var(--card);padding:16px;border-radius:10px;box-shadow:0 8px 30px rgba(10,30,80,0.06);}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #eef3fb;font-size:14px}
+    th{font-weight:600;color:#345}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;color:#fff}
+    .badge.pop{background:linear-gradient(90deg,#2ecc71,#28a745)}
+    .badge.waste{background:linear-gradient(90deg,#ff9a76,#ff6b6b)}
+    .badge.neu{background:#8898a6}
+  /* flags */
+  .flag{display:inline-block;padding:4px 6px;border-radius:6px;font-size:12px;margin-left:6px}
+  .flag.reduce{background:#ffb26b;color:#5a2a00}
+  .flag.increase{background:#7be495;color:#064f1f}
+  .flag.perish{background:#ffd27a;color:#5a3b00}
+    .btn{display:inline-block;padding:8px 10px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;cursor:pointer;border:none}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px}
+    .list-ingredients{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{background:#f1f6ff;padding:6px 8px;border-radius:8px;font-size:13px}
+    .suggest{margin-top:8px;padding:10px;border-radius:8px;background:#fbfbff;border:1px dashed #e6eefc}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .control-btn{background:#f3f6ff;border:1px solid #dfeafe;padding:6px 8px;border-radius:8px;cursor:pointer}
+    .bar-wrap{display:flex;gap:6px;align-items:center}
+    .bar{height:10px;background:#e6f1ff;border-radius:6px;overflow:hidden;flex:1}
+    .bar-inner{height:100%;background:linear-gradient(90deg,#7cc7ff,#0b74da)}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    @media(max-width:920px){.grid{grid-template-columns:1fr;}.card{margin-bottom:12px}}
+    /* tighter mobile layout */
+    @media(max-width:600px){
+      body{padding:16px}
+      .card{padding:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Smart Menu Recommender — Prototype</h1>
+    <p class="muted">Client-side demo: predicts popular vs. waste-prone meals from mock feedback + inventory and suggests simple swaps.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3 style="margin-top:0">Menu & Predictions</h3>
+        <p class="small muted">Click a meal to see suggested swaps. Use the feedback buttons to simulate more data and watch predictions update.</p>
+
+        <table id="meals-table">
+          <thead>
+            <tr><th>Meal</th><th>Popularity</th><th>Waste Risk</th><th>Action</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <div class="muted small">Mock data: past feedback + inventory drive the recommendations.</div>
+          <div>
+            <button class="btn" id="reset-sim">Reset Mock Data</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Selected meal</h3>
+        <div id="selected-area">
+          <p class="muted">No meal selected. Click a row to view details and swap suggestions.</p>
+        </div>
+
+        <div style="margin-top:12px">
+          <h4 style="margin:6px 0">Inventory (editable)</h4>
+          <div id="inventory-list" class="small muted"></div>
+          <div class="controls" style="margin-top:8px">
+            <button class="control-btn" id="add-stock" aria-label="Add random stock">+ Add random stock</button>
+            <button class="control-btn" id="clear-stock" aria-label="Clear low stock flags">Clear low-stock flags</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px" class="card">
+      <h3 style="margin-top:0">Smart Menu</h3>
+      <p class="muted small">Tweak how the recommender balances ratings vs. waste and how much recent feedback shifts scores (EWMA).</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;align-items:center" class="smart-controls" role="region" aria-label="Smart menu controls">
+        <div>
+          <label for="ratingWeight" class="small">Rating Weight: <span id="ratingVal">1.00</span></label>
+          <input id="ratingWeight" aria-labelledby="ratingWeight" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1" type="range" min="0" max="2" step="0.05" value="1" style="width:100%">
+        </div>
+        <div>
+          <label for="wasteWeight" class="small">Waste Weight: <span id="wasteVal">1.00</span></label>
+          <input id="wasteWeight" aria-labelledby="wasteWeight" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1" type="range" min="0" max="2" step="0.05" value="1" style="width:100%">
+        </div>
+        <div>
+          <label for="ewma" class="small">Recent Feedback Bias (EWMA α): <span id="ewmaVal">0.20</span></label>
+          <input id="ewma" aria-labelledby="ewma" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.2" type="range" min="0" max="1" step="0.01" value="0.20" style="width:100%">
+        </div>
+      </div>
+      <div style="margin-top:10px" class="muted small">Notes: Increasing Rating Weight emphasizes popularity; increasing Waste Weight increases sensitivity to waste; EWMA α controls how much a single recent feedback event moves the smoothed popularity.</div>
+    </div>
+
+    <div style="margin-top:18px" class="card">
+      <h3 style="margin-top:0">How it works</h3>
+      <ul>
+        <li>Popularity score = likes / (likes + dislikes + 1). Waste risk = wasted / served.</li>
+        <li>Classified as <span class="badge pop">Popular</span> (high popularity), <span class="badge waste">Waste-prone</span> (high waste rate), or <span class="badge neu">Neutral</span>.</li>
+        <li>Swap suggestions come from a small substitution map and also prefer ingredients with available inventory.</li>
+      </ul>
+      <footer>Prototype: simple, explainable heuristics for quick testing and classroom demos.</footer>
+    </div>
+  </div>
+
+  <script>
+    // Mock data
+    const substitutions = {
+      broccoli: 'carrots',
+      spinach: 'kale',
+      chicken: 'tofu',
+      fish: 'beans',
+      rice: 'quinoa',
+      potato: 'sweet potato'
+    };
+
+    let inventory = {
+      broccoli: 2,
+      carrots: 12,
+      spinach: 1,
+      kale: 6,
+      chicken: 8,
+      tofu: 4,
+      fish: 0,
+      beans: 14,
+      rice: 10,
+      quinoa: 2,
+      potato: 5,
+      'sweet potato': 1
+    };
+
+    // perishability score per ingredient (0..1) — higher means more perishable and should be used soon
+    let perishability = {
+      broccoli: 0.9,
+      carrots: 0.4,
+      spinach: 0.95,
+      kale: 0.6,
+      chicken: 0.85,
+      tofu: 0.5,
+      fish: 0.98,
+      beans: 0.2,
+      rice: 0.1,
+      quinoa: 0.2,
+      potato: 0.3,
+      'sweet potato': 0.2,
+      butter: 0.3
+    };
+
+    const SURPLUS_THRESHOLD = 8; // if average ingredient stock >= this, consider surplus
+
+    // meals: served = number of portions tracked historically
+    let meals = [
+      { id: 'm1', name: 'Chicken & Rice', ingredients:['chicken','rice'], served:120, feedback:{likes:90,dislikes:18,wasted:12}},
+      { id: 'm2', name: 'Broccoli Stir Fry', ingredients:['broccoli','carrots','rice'], served:80, feedback:{likes:30,dislikes:28,wasted:22}},
+      { id: 'm3', name: 'Fish Tacos', ingredients:['fish','spinach','rice'], served:50, feedback:{likes:28,dislikes:10,wasted:12}},
+      { id: 'm4', name: 'Tofu Veg Bowl', ingredients:['tofu','kale','quinoa'], served:40, feedback:{likes:18,dislikes:4,wasted:2}},
+      { id: 'm5', name: 'Mashed Potato', ingredients:['potato','butter'], served:60, feedback:{likes:35,dislikes:8,wasted:17}}
+    ];
+
+    // Smart Menu control defaults (connected to sliders)
+    let ratingWeight = 1.0;   // how much popularity contributes
+    let wasteWeight = 1.0;    // how much waste contributes (higher => more likely classified as waste-prone)
+    let ewmaAlpha = 0.20;     // EWMA alpha for recent feedback bias
+
+    // maintain per-meal smoothed popularity (EWMA)
+    const mealState = {};
+
+    function initMealState(){
+      for(const m of meals){
+        // seed EWMA from historical popularity
+        const p = (m.feedback.likes || 0) / ((m.feedback.likes || 0) + (m.feedback.dislikes || 0) + 1);
+        mealState[m.id] = { ewmaPopularity: p };
+      }
+    }
+
+    // Basic components
+    function popularityScore(fb){
+      const {likes,dislikes} = fb;
+      return likes / (likes + dislikes + 1);
+    }
+    function wasteRate(fb, served){ return (fb.wasted || 0) / (served || 1); }
+
+    // Weighted scoring and classification: combine EWMA popularity (or historical) with waste weight
+    function combinedScore(meal){
+      const state = mealState[meal.id] || {ewmaPopularity: popularityScore(meal.feedback)};
+      const pop = state.ewmaPopularity;
+      const w = wasteRate(meal.feedback, meal.served);
+      // combine: higher combined => better (we subtract wasteWeight * w)
+      return ratingWeight * pop - wasteWeight * w;
+    }
+
+    function classifyMeal(meal){
+      const score = combinedScore(meal);
+      // thresholds tuned to combined score scale (-1..1 roughly)
+      if(score > 0.35) return 'popular';
+      if(score < -0.12) return 'waste-prone';
+      return 'neutral';
+    }
+
+    // Compute actionable flags per meal
+    function computeFlags(meal){
+      const flags = { reduce:false, increase:false, perishable:[] };
+      const wRate = wasteRate(meal.feedback, meal.served);
+      // Flag reduce if expected waste >= 25% of plan
+      if(wRate >= 0.25) flags.reduce = true;
+
+      // Flag increase for score >= 0.75 with surplus stock (average ingredient stock >= SURPLUS_THRESHOLD)
+      const score = combinedScore(meal);
+      const avgStock = meal.ingredients.reduce((s,ing)=> s + (inventory[ing] || 0), 0) / Math.max(1, meal.ingredients.length);
+      if(score >= 0.75 && avgStock >= SURPLUS_THRESHOLD) flags.increase = true;
+
+      // Flag perishable ingredients that should be used soon: perishability >= 0.8 and meal score >= 0.55
+      if(score >= 0.55){
+        for(const ing of meal.ingredients){
+          const p = perishability[ing] || 0;
+          if(p >= 0.8) flags.perishable.push(ing);
+        }
+      }
+      return flags;
+    }
+
+    // Suggest swaps: for each ingredient that is low-stock or commonly wasted, suggest a substitution
+    function suggestSwaps(meal){
+      const suggestions = [];
+      for(const ing of meal.ingredients){
+        // low inventory or ingredient in substitution map
+        const qty = inventory[ing] || 0;
+        if(qty <= 2 && substitutions[ing]){
+          suggestions.push({from:ing, to:substitutions[ing], reason:'low inventory'});
+        }
+        // if ingredient has high historic waste (we use rough heuristic)
+        // find meals where that ing had many wasted portions
+        const ingWaste = meals.reduce((s,m)=> s + ((m.ingredients.includes(ing) ? (m.feedback.wasted || 0) : 0)), 0);
+        if(ingWaste > 20 && substitutions[ing]){
+          suggestions.push({from:ing, to:substitutions[ing], reason:'high waste historically'});
+        }
+      }
+      // If no direct suggestions found, propose an inventory-aware swap: pick an ingredient in the meal and substitute to a higher-stock alternative
+      if(suggestions.length === 0){
+        for(const ing of meal.ingredients){
+          for(const [from,to] of Object.entries(substitutions)){
+            if(from===ing && (inventory[to] || 0) > (inventory[from] || 0)){
+              suggestions.push({from, to, reason:'prefer higher-stock alternative'});
+            }
+          }
+        }
+      }
+      return suggestions;
+    }
+
+    function renderMeals(){
+      const tbody = document.querySelector('#meals-table tbody');
+      tbody.innerHTML = '';
+      for(const meal of meals){
+        const p = popularityScore(meal.feedback);
+        const w = wasteRate(meal.feedback, meal.served);
+        const cls = classifyMeal(meal);
+        const tr = document.createElement('tr');
+        const nameTd = document.createElement('td');
+        nameTd.innerHTML = `<strong>${meal.name}</strong><div class="muted small">Ingredients: ${meal.ingredients.join(', ')}</div>`;
+        const popTd = document.createElement('td');
+        popTd.innerHTML = `<div class="bar-wrap small"><div style="width:60px" class="muted">${(p*100).toFixed(0)}%</div><div class="bar"><div class="bar-inner" style="width:${Math.min(100,p*100)}%"></div></div></div>`;
+        const wasteTd = document.createElement('td');
+        wasteTd.innerHTML = `<div class="small">${(w*100).toFixed(0)}%</div>`;
+        const actTd = document.createElement('td');
+  const viewBtn = document.createElement('button'); viewBtn.className='control-btn'; viewBtn.textContent='View';
+  viewBtn.setAttribute('aria-label', 'View details for ' + meal.name);
+  viewBtn.onclick = ()=> selectMeal(meal.id);
+        actTd.appendChild(viewBtn);
+
+        // quick badges
+  const badge = document.createElement('div');
+  badge.style.marginTop='6px';
+  const b = document.createElement('span');
+  b.className = 'badge ' + (cls==='popular'? 'pop' : cls==='waste-prone' ? 'waste' : 'neu');
+  b.textContent = cls==='popular'? 'Popular' : cls==='waste-prone'? 'Waste-prone': 'Neutral';
+  badge.appendChild(b);
+  // compute flags and show them
+  const flags = computeFlags(meal);
+  if(flags.reduce){ const f = document.createElement('span'); f.className='flag reduce'; f.textContent='Reduce'; badge.appendChild(f); }
+  if(flags.increase){ const f = document.createElement('span'); f.className='flag increase'; f.textContent='Increase'; badge.appendChild(f); }
+  if(flags.perishable && flags.perishable.length){ const f = document.createElement('span'); f.className='flag perish'; f.textContent='Perishable'; badge.appendChild(f); }
+  nameTd.appendChild(badge);
+
+        tr.appendChild(nameTd); tr.appendChild(popTd); tr.appendChild(wasteTd); tr.appendChild(actTd);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function selectMeal(id){
+      const meal = meals.find(m=>m.id===id);
+      const area = document.getElementById('selected-area');
+      area.innerHTML = '';
+      const title = document.createElement('h4'); title.textContent = meal.name; area.appendChild(title);
+      const ingRow = document.createElement('div'); ingRow.className='list-ingredients';
+      // identify perishable flags for this meal
+      const flags = computeFlags(meal);
+      for(const ing of meal.ingredients){ const el = document.createElement('div'); el.className='chip'; el.textContent=ing + (inventory[ing]!==undefined? ' • stock:'+inventory[ing] : '');
+        if(flags.perishable && flags.perishable.includes(ing)){
+          const useSoon = document.createElement('span'); useSoon.style.marginLeft='6px'; useSoon.style.fontSize='12px'; useSoon.style.color='#8a4b00'; useSoon.textContent='(use soon)'; el.appendChild(useSoon);
+        }
+        ingRow.appendChild(el); }
+      area.appendChild(ingRow);
+
+      const stats = document.createElement('div'); stats.style.marginTop='8px'; stats.innerHTML = `<div class="small muted">Served: ${meal.served} • Likes: ${meal.feedback.likes} • Dislikes: ${meal.feedback.dislikes} • Wasted: ${meal.feedback.wasted}</div>`;
+      area.appendChild(stats);
+
+      const suggestions = suggestSwaps(meal);
+      const sBox = document.createElement('div'); sBox.className='suggest';
+      if(suggestions.length===0){ sBox.innerHTML = '<strong>No swaps suggested</strong><div class="muted small">This meal looks fine with current inventory and feedback.</div>'; }
+      else{
+        sBox.innerHTML = '<strong>Suggested swaps</strong>';
+        for(const s of suggestions){
+          const p = document.createElement('div'); p.style.marginTop='8px';
+          p.innerHTML = `<div><strong>swap ${s.from} → ${s.to}</strong> <div class="muted small">reason: ${s.reason}</div></div>`;
+            const apply = document.createElement('button'); apply.className='btn'; apply.style.marginTop='6px'; apply.textContent='Apply swap (simulate)';
+            apply.setAttribute('aria-label', 'Apply swap ' + s.from + ' to ' + s.to + ' for ' + meal.name);
+            apply.onclick = ()=>{ applySwap(meal,s); };
+          p.appendChild(apply);
+          sBox.appendChild(p);
+        }
+      }
+      area.appendChild(sBox);
+
+      // Feedback simulation controls
+      const sim = document.createElement('div'); sim.style.marginTop='10px'; sim.innerHTML = '<div class="muted small">Simulate feedback:</div>';
+      const btns = document.createElement('div'); btns.className='controls';
+      ['like','dislike','waste'].forEach(type=>{
+        const b = document.createElement('button'); b.className='control-btn'; b.textContent = type; b.onclick = ()=>{ simulateFeedback(meal.id,type); };
+        btns.appendChild(b);
+      });
+      sim.appendChild(btns);
+      area.appendChild(sim);
+    }
+
+    function applySwap(meal,s){
+      // simple simulation: replace ingredient in meal.ingredients
+      const idx = meal.ingredients.indexOf(s.from);
+      if(idx!==-1){ meal.ingredients[idx] = s.to; }
+      // decrease stock of new ingredient to simulate usage
+      inventory[s.to] = Math.max(0,(inventory[s.to]||0)-1);
+      // increase stock of removed if present (we 'avoid' wasting it) - simulation only
+      inventory[s.from] = Math.max(0,(inventory[s.from]||0));
+      renderInventory(); renderMeals(); selectMeal(meal.id);
+    }
+
+    function simulateFeedback(mealId,type){
+      const meal = meals.find(m=>m.id===mealId);
+      if(!meal) return;
+      if(type==='like'){
+        meal.feedback.likes += 1;
+        // update EWMA popularity upwards
+        const state = mealState[mealId] = mealState[mealId] || {ewmaPopularity: popularityScore(meal.feedback)};
+        const instant = 1.0; // like treated as full positive
+        state.ewmaPopularity = ewmaAlpha * instant + (1 - ewmaAlpha) * state.ewmaPopularity;
+      }
+      if(type==='dislike'){
+        meal.feedback.dislikes += 1;
+        const state = mealState[mealId] = mealState[mealId] || {ewmaPopularity: popularityScore(meal.feedback)};
+        const instant = 0.0; // dislike treated as zero
+        state.ewmaPopularity = ewmaAlpha * instant + (1 - ewmaAlpha) * state.ewmaPopularity;
+      }
+      if(type==='waste') { meal.feedback.wasted += 1; meal.served += 1; }
+      renderMeals(); selectMeal(meal.id);
+    }
+
+    function renderInventory(){
+      const div = document.getElementById('inventory-list'); div.innerHTML='';
+      for(const [k,v] of Object.entries(inventory)){
+        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='6px 0';
+        row.innerHTML = `<div class="small">${k}</div><div class="small">${v}</div>`;
+        div.appendChild(row);
+      }
+    }
+
+    document.getElementById('reset-sim').addEventListener('click',()=>{
+      // reset to initial mock state
+      inventory = { broccoli:2, carrots:12, spinach:1, kale:6, chicken:8, tofu:4, fish:0, beans:14, rice:10, quinoa:2, potato:5, 'sweet potato':1 };
+      meals = [ { id: 'm1', name: 'Chicken & Rice', ingredients:['chicken','rice'], served:120, feedback:{likes:90,dislikes:18,wasted:12}},
+        { id: 'm2', name: 'Broccoli Stir Fry', ingredients:['broccoli','carrots','rice'], served:80, feedback:{likes:30,dislikes:28,wasted:22}},
+        { id: 'm3', name: 'Fish Tacos', ingredients:['fish','spinach','rice'], served:50, feedback:{likes:28,dislikes:10,wasted:12}},
+        { id: 'm4', name: 'Tofu Veg Bowl', ingredients:['tofu','kale','quinoa'], served:40, feedback:{likes:18,dislikes:4,wasted:2}},
+        { id: 'm5', name: 'Mashed Potato', ingredients:['potato','butter'], served:60, feedback:{likes:35,dislikes:8,wasted:17}} ];
+      renderInventory(); renderMeals(); document.getElementById('selected-area').innerHTML='<p class="muted">No meal selected. Click a row to view details and swap suggestions.</p>';
+      // reinitialize EWMA states
+      initMealState();
+    });
+
+    document.getElementById('add-stock').addEventListener('click',()=>{
+      // randomly add small stock to one low item
+      const keys = Object.keys(inventory);
+      const low = keys.filter(k=>inventory[k] <= 2);
+      if(low.length===0) return alert('No low-stock items right now');
+      const pick = low[Math.floor(Math.random()*low.length)]; inventory[pick] += 6; renderInventory(); renderMeals();
+    });
+    document.getElementById('clear-stock').addEventListener('click',()=>{ for(const k of Object.keys(inventory)) if(inventory[k] < 0) inventory[k]=0; renderInventory(); });
+
+    // initial render
+  initMealState();
+  renderInventory(); renderMeals();
+
+    // small accessibility: click first row by default
+    setTimeout(()=>{ if(meals.length) selectMeal(meals[0].id); },300);
+
+    // wire sliders
+    const ratingSlider = document.getElementById('ratingWeight');
+    const wasteSlider = document.getElementById('wasteWeight');
+    const ewmaSlider = document.getElementById('ewma');
+    const ratingVal = document.getElementById('ratingVal');
+    const wasteVal = document.getElementById('wasteVal');
+    const ewmaVal = document.getElementById('ewmaVal');
+
+    function updateWeights(){
+      ratingWeight = parseFloat(ratingSlider.value);
+      wasteWeight = parseFloat(wasteSlider.value);
+      ewmaAlpha = parseFloat(ewmaSlider.value);
+      ratingVal.textContent = ratingWeight.toFixed(2);
+      wasteVal.textContent = wasteWeight.toFixed(2);
+      ewmaVal.textContent = ewmaAlpha.toFixed(2);
+      // update aria-valuenow for screen readers
+      ratingSlider.setAttribute('aria-valuenow', ratingWeight.toFixed(2));
+      wasteSlider.setAttribute('aria-valuenow', wasteWeight.toFixed(2));
+      ewmaSlider.setAttribute('aria-valuenow', ewmaAlpha.toFixed(2));
+      // no need to recompute EWMA values here; they will affect future feedback
+      renderMeals();
+      // update mealState smoothing using new alpha? keep existing states but future updates will use new alpha
+    }
+
+    ratingSlider.addEventListener('input', updateWeights);
+    wasteSlider.addEventListener('input', updateWeights);
+    ewmaSlider.addEventListener('input', updateWeights);
+    updateWeights();
+  </script>
+</body>
+</html>
