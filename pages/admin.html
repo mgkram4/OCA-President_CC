@@ -1,0 +1,313 @@
+I would like you to make me a goal/ acceptance critria
+Goal: Create an admin dashboard page for managing user accounts.
+<!--
+	Admin Dashboard
+
+	Goal: Create an admin dashboard page for managing user accounts.
+
+	Acceptance criteria:
+	- Page lists users in a table with columns: ID, Name, Email, Role, Actions
+	- Support searching/filtering users by name or email
+	- Support adding a new user with form validation (name, email, role)
+	- Support editing existing users inline in a modal
+	- Support deleting users with confirmation
+	- Persist users to localStorage so data survives reloads
+	- Responsive layout for mobile and desktop
+	- Basic accessibility: labels, focus states, keyboard access
+-->
+
+	<!-- Usage:
+		- Open this file in a browser to view the admin dashboard.
+		- Use the Search box to filter users by name or email.
+		- Click "Add user" to create a new user. Click Edit/Delete to manage existing users.
+		- Data is stored in browser localStorage under the key 'admin_users_v1'. To reset sample data, open the browser console and run:
+				localStorage.removeItem('admin_users_v1'); location.reload();
+	-->
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Admin Dashboard - Manage Users</title>
+		<style>
+			:root{--bg:#f6f9fc;--card:#fff;--muted:#6b7280;--accent:#0b6efd;--danger:#e11d48}
+			html,body{height:100%;margin:0;font-family:Segoe UI, Roboto, system-ui, -apple-system, Arial}
+			body{background:linear-gradient(180deg,#f8fafc, #eef2ff);padding:24px;color:#0f172a}
+			.container{max-width:1100px;margin:0 auto}
+			header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+			h1{font-size:20px;margin:0}
+			.card{background:var(--card);box-shadow:0 1px 2px rgba(15,23,42,0.06);border-radius:10px;padding:16px}
+			.controls{display:flex;gap:12px;align-items:center}
+			.search{display:flex;gap:8px;align-items:center}
+			input[type=text], select{padding:8px 10px;border:1px solid #e6edf7;border-radius:8px}
+			button{background:var(--accent);color:white;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}
+			button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,110,253,0.12)}
+			table{width:100%;border-collapse:collapse;margin-top:12px}
+			th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #eef2ff}
+			th{font-size:13px;color:var(--muted)}
+			td small{color:var(--muted);display:block}
+			.actions{display:flex;gap:8px}
+			.badge{background:#eef2ff;color:var(--accent);padding:4px 8px;border-radius:999px;font-size:12px}
+			.empty{padding:40px;text-align:center;color:var(--muted)}
+			.flex{display:flex}
+			.space{flex:1}
+
+			/* Modal */
+			.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;padding:24px}
+			.modal{background:var(--card);width:100%;max-width:560px;border-radius:10px;padding:18px}
+			.modal.show{display:block}
+			.form-row{display:flex;gap:10px}
+			.form-group{display:flex;flex-direction:column;margin-bottom:10px;min-width:0}
+			label{font-size:13px;margin-bottom:6px}
+			input,select{font-size:14px}
+			.danger{background:var(--danger);}
+
+			@media (max-width:640px){
+				.controls{flex-direction:column;align-items:stretch}
+				.form-row{flex-direction:column}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<div>
+					<h1>Admin Dashboard</h1>
+					<div style="color:var(--muted);font-size:13px">Manage user accounts and roles</div>
+				</div>
+				<div class="controls">
+					<div class="search card" style="display:flex;align-items:center">
+						<input id="search" type="text" placeholder="Search by name or email" aria-label="Search users" />
+						<button id="clearSearch" class="ghost" title="Clear search">Clear</button>
+					</div>
+					<button id="addUserBtn">+ Add user</button>
+				</div>
+			</header>
+
+			<main>
+				<section class="card" aria-labelledby="users-heading">
+					<h2 id="users-heading" style="font-size:15px;margin:0 0 8px 0">Users</h2>
+					<div id="tableContainer">
+						<table aria-describedby="users-heading" id="usersTable">
+							<thead>
+								<tr>
+									<th style="width:60px">ID</th>
+									<th>Name</th>
+									<th>Email</th>
+									<th style="width:110px">Role</th>
+									<th style="width:160px">Actions</th>
+								</tr>
+							</thead>
+							<tbody id="usersTbody">
+								<!-- rows inserted by JS -->
+							</tbody>
+						</table>
+						<div id="emptyState" class="empty" style="display:none">No users found. Add a new user to get started.</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<!-- Modal -->
+		<div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+			<div class="modal card" role="document" aria-labelledby="modalTitle">
+				<h3 id="modalTitle">Add user</h3>
+				<form id="userForm">
+					<input type="hidden" id="userId" />
+					<div class="form-row">
+						<div class="form-group" style="flex:1">
+							<label for="name">Full name</label>
+							<input id="name" name="name" type="text" required autocomplete="name" />
+						</div>
+						<div class="form-group" style="flex:1">
+							<label for="email">Email</label>
+							<input id="email" name="email" type="email" required autocomplete="email" />
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-group" style="flex:1">
+							<label for="role">Role</label>
+							<select id="role" name="role">
+								<option value="admin">Admin</option>
+								<option value="staff">Staff</option>
+								<option value="student">Student</option>
+							</select>
+						</div>
+						<div class="form-group" style="flex:1">
+							<label for="active">Status</label>
+							<select id="active" name="active">
+								<option value="true">Active</option>
+								<option value="false">Inactive</option>
+							</select>
+						</div>
+					</div>
+
+					<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+						<button type="button" id="cancelBtn" class="ghost">Cancel</button>
+						<button type="submit" id="saveBtn">Save</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<script>
+			// Simple client-side user management using localStorage
+			const STORAGE_KEY = 'admin_users_v1'
+
+			function uid(){return Math.random().toString(36).slice(2,9)}
+
+			function loadUsers(){
+				try{
+					const raw = localStorage.getItem(STORAGE_KEY)
+					return raw ? JSON.parse(raw) : []
+				}catch(e){console.error('Failed to parse users', e);return []}
+			}
+
+			function saveUsers(list){localStorage.setItem(STORAGE_KEY, JSON.stringify(list))}
+
+			// Seed with sample users if empty
+			function seedIfEmpty(){
+				const users = loadUsers()
+				if(users.length===0){
+					const sample=[
+						{id:uid(),name:'Alex Johnson',email:'alex.j@example.com',role:'admin',active:true},
+						{id:uid(),name:'Priya Singh',email:'priya.s@example.com',role:'staff',active:true},
+						{id:uid(),name:'Diego Mar',email:'diego.m@example.com',role:'student',active:false}
+					]
+					saveUsers(sample)
+				}
+			}
+
+			// UI refs
+			const usersTbody = document.getElementById('usersTbody')
+			const emptyState = document.getElementById('emptyState')
+			const searchInput = document.getElementById('search')
+			const clearSearchBtn = document.getElementById('clearSearch')
+			const addUserBtn = document.getElementById('addUserBtn')
+			const modalBackdrop = document.getElementById('modalBackdrop')
+			const modalTitle = document.getElementById('modalTitle')
+			const userForm = document.getElementById('userForm')
+
+			function render(){
+				const q = (searchInput.value||'').trim().toLowerCase()
+				const all = loadUsers()
+				const filtered = all.filter(u=>{
+					if(!q) return true
+					return (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)
+				})
+
+				usersTbody.innerHTML = ''
+				if(filtered.length===0){
+					emptyState.style.display = 'block'
+					document.getElementById('usersTable').style.display='none'
+					return
+				}
+				emptyState.style.display = 'none'
+				document.getElementById('usersTable').style.display='table'
+
+				filtered.forEach((u,idx)=>{
+					const tr = document.createElement('tr')
+					tr.innerHTML = `
+						<td><div style="font-weight:600">${idx+1}</div></td>
+						<td><div>${escapeHtml(u.name)}</div><small>${u.active? 'Active' : 'Inactive'}</small></td>
+						<td><div>${escapeHtml(u.email)}</div></td>
+						<td><div class="badge">${escapeHtml(cap(u.role))}</div></td>
+						<td>
+							<div class="actions">
+								<button class="ghost" data-action="edit" data-id="${u.id}">Edit</button>
+								<button class="ghost" data-action="delete" data-id="${u.id}">Delete</button>
+							</div>
+						</td>
+					`
+					usersTbody.appendChild(tr)
+				})
+			}
+
+			function escapeHtml(s){return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+			function cap(s){return (s||'').charAt(0).toUpperCase()+ (s||'').slice(1)}
+
+			// Modal helpers
+			function openModal(mode='add', user){
+				modalBackdrop.style.display='flex'
+				modalBackdrop.setAttribute('aria-hidden','false')
+				modalBackdrop.querySelector('input,select,textarea').focus()
+				if(mode==='add'){
+					modalTitle.textContent='Add user'
+					userForm.reset()
+					document.getElementById('userId').value=''
+				}else{
+					modalTitle.textContent='Edit user'
+					document.getElementById('userId').value=user.id
+					document.getElementById('name').value=user.name
+					document.getElementById('email').value=user.email
+					document.getElementById('role').value=user.role
+					document.getElementById('active').value=String(!!user.active)
+				}
+			}
+			function closeModal(){
+				modalBackdrop.style.display='none'
+				modalBackdrop.setAttribute('aria-hidden','true')
+			}
+
+			// Events
+			addUserBtn.addEventListener('click',()=>openModal('add'))
+			clearSearchBtn.addEventListener('click',()=>{searchInput.value='';render();searchInput.focus()})
+			searchInput.addEventListener('input', ()=> render())
+
+			// Form submit for add/edit
+			userForm.addEventListener('submit', (e)=>{
+				e.preventDefault()
+				const id = document.getElementById('userId').value
+				const name = document.getElementById('name').value.trim()
+				const email = document.getElementById('email').value.trim()
+				const role = document.getElementById('role').value
+				const active = document.getElementById('active').value === 'true'
+
+				if(!name || !email){
+					alert('Please provide name and email')
+					return
+				}
+				const users = loadUsers()
+				if(id){
+					// edit
+					const i = users.findIndex(u=>u.id===id)
+					if(i>=0){users[i] = {...users[i],name,email,role,active}; saveUsers(users)}
+				}else{
+					users.push({id:uid(),name,email,role,active})
+					saveUsers(users)
+				}
+				closeModal(); render()
+			})
+
+			// Clicks in table (delegation)
+			usersTbody.addEventListener('click', (e)=>{
+				const btn = e.target.closest('button')
+				if(!btn) return
+				const action = btn.dataset.action
+				const id = btn.dataset.id
+				if(action==='edit'){
+					const user = loadUsers().find(u=>u.id===id)
+					if(user) openModal('edit', user)
+				}else if(action==='delete'){
+					if(confirm('Delete this user? This cannot be undone.')){
+						const remaining = loadUsers().filter(u=>u.id!==id)
+						saveUsers(remaining); render()
+					}
+				}
+			})
+
+			// Cancel modal
+			document.getElementById('cancelBtn').addEventListener('click', closeModal)
+
+			// Close modal when clicking backdrop
+			modalBackdrop.addEventListener('click', (e)=>{if(e.target===modalBackdrop) closeModal()})
+
+			// Keyboard: Esc to close
+			document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal() })
+
+			// Initial seed and render
+			seedIfEmpty(); render()
+		</script>
+	</body>
+</html>
