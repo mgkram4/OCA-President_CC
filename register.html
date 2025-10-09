@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Register  OCA Cafeteria</title>
+        <style>
+        :root{--bg:#f6f7fb;--card:#fff;--accent:#2b6df6;--muted:#6b7280;--max:1100px}
+        *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;background:var(--bg);color:#111}
+        .container{max-width:var(--max);margin:0 auto;padding:1rem}
+        .site-header{background:#fff;border-bottom:1px solid #e6e9ef}.header-inner{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}.brand{font-weight:700;color:var(--accent);text-decoration:none}.main-nav a{margin-left:1rem;color:#111;text-decoration:none;font-size:0.95rem}.main-nav .admin-link{background:#111;color:#fff;padding:0.35rem 0.6rem;border-radius:6px}.hero{padding:3rem 1rem;text-align:center}.hero h1{margin:0 0 0.5rem;font-size:2rem}.lead{color:var(--muted);margin-bottom:1rem}.cta-row .btn{display:inline-block;margin:0.25rem 0.5rem;padding:0.6rem 1rem;border-radius:8px;text-decoration:none}.btn{background:var(--accent);color:#fff}.btn.outline{background:transparent;border:1px solid #cbd5ff;color:var(--accent)}
+        .card{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 6px 18px rgba(24,39,75,0.06)}
+        .choice-grid{display:grid;grid-template-columns:1fr;gap:1rem;padding:1rem}
+        .choice-item{padding:1rem;border-radius:10px;background:var(--card);text-align:center}
+        .site-footer{padding:1rem 0;margin-top:2rem;text-align:center;color:var(--muted)}
+        @media(min-width:720px){.hero h1{font-size:2.6rem}.choice-grid{grid-template-columns:repeat(2,1fr)}}
+        </style>
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="container header-inner">
+                <a class="brand" href="../index.html">OCA Cafeteria</a>
+                <nav class="main-nav">
+                    <a href="scan_food.html">Scan Food</a>
+                    <a href="smart_menu.html">Smart Menu</a>
+                    <a href="waste_tracker.html">Waste Tracker</a>
+                    <a href="student_feedback.html">Feedback</a>
+                    <a href="admin.html" class="admin-link">Admin</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="container">
+            <section class="hero">
+                <h1>Create an account</h1>
+                <p class="lead">Register as a student/client or an administrator for the cafeteria tools.</p>
+            </section>
+
+            <section class="choice-grid">
+                <div class="choice-item card">
+                    <h2>Student / Client</h2>
+                    <p>Register for access to scanning, feedback, and menu features.</p>
+                    <p><a class="btn" href="register_client.html">Register as Client</a></p>
+                </div>
+
+                <div class="choice-item card">
+                    <h2>Administrator</h2>
+                    <p>Register an admin account to manage menus and view analytics.</p>
+                    <p><a class="btn outline" href="register_admin.html">Register as Admin</a></p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <small>
