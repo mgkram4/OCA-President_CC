@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register - Admin | OCA Cafeteria</title>
+    <style>
+      :root{--bg:#f6f7fb;--card:#fff;--accent:#2b6df6;--muted:#6b7280;--max:1100px}
+      *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;background:var(--bg);color:#111}
+      .container{max-width:var(--max);margin:0 auto;padding:1rem}
+      .site-header{background:#fff;border-bottom:1px solid #e6e9ef}.header-inner{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}.brand{font-weight:700;color:var(--accent);text-decoration:none}.main-nav a{margin-left:1rem;color:#111;text-decoration:none;font-size:0.95rem}.main-nav .admin-link{background:#111;color:#fff;padding:0.35rem 0.6rem;border-radius:6px}
+      .card{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 6px 18px rgba(24,39,75,0.06);max-width:720px;margin:1rem auto}
+      form{display:grid;gap:0.75rem}
+      label{font-size:0.9rem;color:var(--muted)}
+      input{padding:0.6rem;border-radius:8px;border:1px solid #e6e9ef}
+      .actions{display:flex;gap:0.5rem;justify-content:flex-end}
+      .btn{background:var(--accent);color:#fff;padding:0.6rem 1rem;border-radius:8px;text-decoration:none;border:none}
+      .note{font-size:0.9rem;color:var(--muted)}
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="../index.html">OCA Cafeteria</a>
+        <nav class="main-nav">
+          <a href="scan_food.html">Scan Food</a>
+          <a href="smart_menu.html">Smart Menu</a>
+          <a href="waste_tracker.html">Waste Tracker</a>
+          <a href="student_feedback.html">Feedback</a>
+          <a href="admin.html" class="admin-link">Admin</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <article class="card">
+        <h1>Register as an Administrator</h1>
+        <p class="note">Admin accounts allow access to management tools. An admin code is required.</p>
+
+        <form id="adminForm" onsubmit="return handleSubmit(event)">
+          <div>
+            <label for="name">Full name</label>
+            <input id="name" name="name" required placeholder="Admin Name" />
+          </div>
+
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required placeholder="admin@school.edu" />
+          </div>
+
+          <div>
+            <label for="adminCode">Admin code</label>
+            <input id="adminCode" name="adminCode" required placeholder="Enter admin code" />
+          </div>
+
+          <div>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" minlength="8" required />
+          </div>
+
+          <div>
+            <label for="confirm">Confirm password</label>
+            <input id="confirm" name="confirm" type="password" minlength="8" required />
+          </div>
+
+          <div class="actions">
+            <a class="btn outline" href="register.html" style="background:transparent;color:var(--accent);border:1px solid #e6e9ef;padding:0.5rem 0.8rem;">Back</a>
+            <button class="btn" type="submit">Create admin</button>
+          </div>
+        </form>
+
+        <p id="msg" class="note" aria-live="polite"></p>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container"><small style="color:var(--muted)">© OCA Cafeteria</small></div>
+    </footer>
+
+    <script>
+      // Replace ADMIN_SECRET with a simple demo code. In production this must be handled server-side.
+      const ADMIN_SECRET = 'SECRET123';
+      function handleSubmit(e){
+        e.preventDefault();
+        const pwd = document.getElementById('password').value;
+        const conf = document.getElementById('confirm').value;
+        const code = document.getElementById('adminCode').value;
+        const msg = document.getElementById('msg');
+        if(pwd !== conf){ msg.textContent = 'Passwords do not match.'; msg.style.color = 'crimson'; return false; }
+        if(code !== ADMIN_SECRET){ msg.textContent = 'Invalid admin code.'; msg.style.color = 'crimson'; return false; }
+        msg.textContent = 'Admin account created (demo). You can now sign in.'; msg.style.color = 'green';
+        document.getElementById('adminForm').reset();
+        return false;
+      }
+    </script>
+  </body>
+</html>
