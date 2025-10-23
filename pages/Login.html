@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in — OCA Cafeteria</title>
+    <!-- Improved design: Google Fonts, SVG brand, glass card, refined controls -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root{
+        --bg-a:#eef6ff; --bg-b:#fbfdff; --card:rgba(255,255,255,0.85);
+        --accent:linear-gradient(90deg,#0b6efd,#7cc7ff);
+        --accent-color:#0b6efd; --muted:#6b7280; --glass:rgba(255,255,255,0.6);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,Arial,sans-serif;background:radial-gradient(1200px 600px at 10% 10%, rgba(11,110,253,0.06), transparent), linear-gradient(180deg,var(--bg-a),var(--bg-b));color:#071033}
+      main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+      .layout{display:flex;gap:36px;align-items:center;width:100%;max-width:1100px}
+      .brand-panel{flex:1;display:none;flex-direction:column;gap:18px}
+      @media(min-width:960px){.brand-panel{display:flex}}
+      .logo-wrap{width:96px;height:96px;border-radius:18px;background:linear-gradient(135deg,#0b6efd,#7cc7ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:26px;box-shadow:0 10px 30px rgba(11,110,253,0.12)}
+      h2.brand-title{margin:0;font-size:20px}
+      p.brand-desc{margin:0;color:var(--muted);max-width:360px}
+
+      .card{
+        width:100%;max-width:460px;padding:28px;border-radius:16px;background:var(--card);backdrop-filter:blur(6px) saturate(120%);box-shadow:0 30px 80px rgba(8,24,48,0.12);
+      }
+      h1{margin:0 0 6px 0;font-size:22px}
+      p.lead{margin:0 0 12px 0;color:var(--muted)}
+
+      form{display:flex;flex-direction:column;gap:12px}
+      label{font-size:13px;color:#071033}
+      input[type=text],input[type=password],select{padding:12px 14px;border-radius:12px;border:1px solid rgba(12,34,84,0.06);background:white;font-size:15px;transition:box-shadow .12s,border-color .12s}
+      input:focus,select:focus{outline:none;border-color:rgba(11,110,253,0.35);box-shadow:0 8px 30px rgba(11,110,253,0.06)}
+
+      .pw-row{display:flex;gap:10px}
+      .pw-toggle{min-width:78px;padding:10px;border-radius:12px;border:1px solid rgba(12,34,84,0.06);background:#fbfdff;cursor:pointer}
+
+      .strength{height:8px;border-radius:8px;background:#eef3ff;overflow:hidden}
+      .strength > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#fb7185,#f97316,#f59e0b,#10b981);transition:width .18s}
+
+      .controls{display:flex;gap:12px}
+      .btn{flex:1;padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,#0b6efd,#3aa0ff);color:white;font-weight:700;cursor:pointer;box-shadow:0 8px 30px rgba(11,110,253,0.12);transition:transform .08s}
+      .btn.secondary{background:transparent;border:1px solid rgba(11,110,253,0.12);color:var(--accent-color);box-shadow:none}
+      .btn:active{transform:translateY(1px)}
+
+      .helper{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+      .status{font-size:14px;padding:10px;border-radius:10px;margin-top:8px}
+      .status.error{background:rgba(239,68,68,0.06);color:#b91c1c}
+      .status.success{background:rgba(16,185,129,0.06);color:#059669}
+
+      .foot{text-align:center;margin-top:14px;color:var(--muted);font-size:13px}
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="layout">
+        <aside class="brand-panel" aria-hidden="true">
+          <div class="logo-wrap">OCA</div>
+          <h2 class="brand-title">OCA Cafeteria Tools</h2>
+          <p class="brand-desc">A lightweight demo for managing menus, tracking plate waste and collecting student feedback. Sign in to access staff and admin tools.</p>
+        </aside>
+
+        <section class="card" aria-labelledby="authTitle">
+          <h1 id="authTitle">Welcome back</h1>
+          <p class="lead">Sign in to your account or create one for demo access.</p>
+
+          <form id="authForm" autocomplete="on">
+              <div>
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" required autocomplete="username" placeholder="e.g. alex.jones" />
+              </div>
+
+              <div>
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" placeholder="you@school.edu" />
+              </div>
+
+            <div>
+              <label for="password">Password</label>
+              <div class="pw-row">
+                <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Enter password" />
+                <button type="button" id="togglePw" class="pw-toggle" aria-pressed="false">Show</button>
+              </div>
+              <div class="strength" aria-hidden="true"><i id="pwBar"></i></div>
+            </div>
+
+            <div>
+              <label for="role">Role</label>
+              <select id="role" name="role" aria-label="Select role">
+                <option value="student">Student</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div class="controls">
+              <button id="signin" type="button" class="btn">Sign in</button>
+              <button id="signup" type="button" class="btn secondary">Create</button>
+            </div>
+
+            <div class="helper">
+              <label style="display:flex;gap:8px;align-items:center"><input id="remember" type="checkbox" /> Remember me</label>
+              <a href="#" class="inline-link" id="forgot">Forgot password?</a>
+            </div>
+
+            <div id="status" class="status" role="status" aria-live="polite" style="display:none"></div>
+            <!-- Success modal -->
+            <div id="successModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);">
+              <div style="background:white;padding:20px;border-radius:10px;max-width:420px;margin:0 auto;text-align:center;">
+                <h3 style="margin-top:0">Account created</h3>
+                <p id="successMsg">Your account was created successfully.</p>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+                  <button id="successClose" class="btn secondary">Continue</button>
+                </div>
+              </div>
+            </div>
+            <small style="display:block;margin-top:8px;color:var(--muted)">Admin seeded: <code>admin</code> / <code>password</code>. This is a client-side demo only.</small>
+          </form>
+
+          <div class="foot">By continuing you agree to the demo terms. For production use a secure server-side auth solution.</div>
+        </section>
+      </div>
+    </main>
+
+  <script src="/pages/firebase-config-runtime.js"></script>
+  <script type="module">
+      import { initFirebaseModule } from '/pages/firebase-init.module.js';
+
+      // Initialize Firebase modular SDK from CDN
+      const services = await initFirebaseModule();
+      if(!services){
+        console.warn('Firebase not initialized - sign-in/sign-up will not work until config is provided.');
+      }
+
+      const auth = services ? services.auth : null;
+      const db = services ? services.db : null;
+      const modules = services ? services.modules : null;
+
+      // UI refs
+      const usernameEl = document.getElementById('username')
+      const passwordEl = document.getElementById('password')
+      const roleEl = document.getElementById('role')
+      const statusEl = document.getElementById('status')
+      const signinBtn = document.getElementById('signin')
+      const signupBtn = document.getElementById('signup')
+      const togglePw = document.getElementById('togglePw')
+      const pwBar = document.getElementById('pwBar')
+
+      function showStatus(text,type){ statusEl.style.display='block'; statusEl.textContent=text; statusEl.className='status '+(type==='error'? 'error' : 'success') }
+      function clearStatus(){ statusEl.style.display='none'; statusEl.textContent=''; statusEl.className='status' }
+
+      // password toggle
+      togglePw.addEventListener('click', ()=>{
+        const is = passwordEl.type === 'password'
+        passwordEl.type = is ? 'text' : 'password'
+        togglePw.textContent = is ? 'Hide' : 'Show'
+        togglePw.setAttribute('aria-pressed', String(is))
+      })
+
+      // strength meter (kept client-side UX only)
+      passwordEl.addEventListener('input', ()=>{
+        const s = passwordEl.value||''
+        let score = 0
+        if(s.length >= 8) score += 40
+        if(/[A-Z]/.test(s)) score += 20
+        if(/[0-9]/.test(s)) score += 20
+        if(/[^A-Za-z0-9]/.test(s)) score += 20
+        pwBar.style.width = Math.min(100,score) + '%'
+      })
+
+      function setSession(user, remember){
+        const payload = {username:user.username,role:user.role,ts:Date.now()}
+        if(remember) localStorage.setItem('oca_session_v1', JSON.stringify(payload))
+        else sessionStorage.setItem('oca_session_v1', JSON.stringify(payload))
+      }
+
+      // Sign in
+      signinBtn.addEventListener('click', async ()=>{
+        clearStatus()
+        const username = (usernameEl.value||'').trim()
+        const email = (document.getElementById('email').value||'').trim()
+        const password = passwordEl.value || ''
+        const remember = document.getElementById('remember').checked
+        if(!password || (!username && !email)){ showStatus('Enter username or email and password','error'); return }
+
+        if(!auth || !db || !modules){ showStatus('Firebase not configured. Contact the site administrator.','error'); return }
+
+        try{
+          // prefer email sign-in
+          if(email){
+            const res = await modules.auth.signInWithEmailAndPassword(auth, email, password)
+            const uid = res.user.uid
+            const userDoc = await modules.firestore.getDoc(modules.firestore.doc(db, 'users', uid))
+            let data = userDoc.exists() ? userDoc.data() : null
+            if(!data){
+              // fallback: create user document with default role
+              await modules.firestore.setDoc(modules.firestore.doc(db, 'users', uid), { username: res.user.displayName || email, email, role: 'student', createdAt: modules.firestore.serverTimestamp() })
+              data = { role: 'student', username: res.user.displayName || email }
+            }
+            setSession({username: data.username, role: data.role}, remember)
+            showStatus('Signed in — redirecting...', 'success')
+            setTimeout(()=>{ window.location.href = (data.role === 'admin' ? 'admin.html' : '../index.html') }, 700)
+            return
+          }
+  }catch(err){ console.error('Sign-in failed', err); const code = err.code || err.code || ''; showStatus('Sign-in failed ['+code+']: '+(err.message||err),'error'); return }
+      })
+
+      // Sign up
+      signupBtn.addEventListener('click', async ()=>{
+        clearStatus()
+        const username = (usernameEl.value||'').trim()
+        const email = (document.getElementById('email').value||'').trim()
+        const password = passwordEl.value || ''
+        const role = roleEl.value
+        const remember = document.getElementById('remember').checked
+        if(!username || !password || !email){ showStatus('Enter username, email and password to create an account.','error'); return }
+
+        if(!auth || !db || !modules){ showStatus('Firebase not configured. Contact the site administrator.','error'); return }
+
+        try{
+            const res = await modules.auth.createUserWithEmailAndPassword(auth, email, password)
+            const uid = res.user.uid
+
+            // Helper: try to write user doc with a few retries to avoid token propagation timing issues
+            async function writeUserDocWithRetry(docRef, data, attempts = 3){
+              for(let i=0;i<attempts;i++){
+                try{
+                  await modules.firestore.setDoc(docRef, data)
+                  return true
+                }catch(e){
+                  console.warn('Write attempt failed', i, e.code || e.message || e)
+                  // If permission-denied, wait briefly and retry (token propagation can be slightly delayed)
+                  if(e && (e.code === 'permission-denied' || e.code === 'PERMISSION_DENIED')){
+                    await new Promise(r=>setTimeout(r, 600))
+                    continue
+                  }
+                  throw e
+                }
+              }
+              return false
+            }
+
+            const userRef = modules.firestore.doc(db, 'users', uid)
+            const wrote = await writeUserDocWithRetry(userRef, { username, email, role, createdAt: modules.firestore.serverTimestamp() })
+            setSession({username, role}, remember)
+            if(wrote){
+              // show modal success and let user continue
+              document.getElementById('successMsg').textContent = 'Your account was created and profile saved.'
+              document.getElementById('successModal').style.display = 'flex'
+              document.getElementById('successClose').addEventListener('click', ()=>{
+                document.getElementById('successModal').style.display = 'none'
+                window.location.href = (role === 'admin' ? 'admin.html' : '../index.html')
+              })
+              return
+            }else{
+              // likely permission issue; inform user with actionable advice
+              showStatus('Account created but saving profile failed due to permissions. Contact an administrator to enable Firestore rules or set your profile.','error')
+              // also show a modal with guidance
+              document.getElementById('successMsg').textContent = 'Account created but failed to save profile due to Firestore permissions. Please ask the site administrator to deploy correct rules.'
+              document.getElementById('successModal').style.display = 'flex'
+              document.getElementById('successClose').addEventListener('click', ()=>{ document.getElementById('successModal').style.display = 'none' })
+              return
+            }
+  }catch(err){ console.error('Signup failed', err); const code = err.code || ''; showStatus('Signup failed ['+code+']: '+(err.message||err),'error'); return }
+      })
+
+      // keyboard: Enter triggers sign in
+      document.getElementById('authForm').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); signinBtn.click() } })
+
+      // Google sign-in button (modular)
+      (function addGoogleBtn(){
+        if(!auth || !db || !modules) return
+        const googleBtn = document.createElement('button')
+        googleBtn.textContent = 'Sign in with Google'
+        googleBtn.className = 'btn'
+        googleBtn.style.marginTop = '8px'
+        googleBtn.addEventListener('click', async ()=>{
+          try{
+            const provider = new modules.auth.GoogleAuthProvider()
+            const result = await modules.auth.signInWithPopup(auth, provider)
+            const u = result.user
+            const userRef = modules.firestore.doc(db, 'users', u.uid)
+            const snap = await modules.firestore.getDoc(userRef)
+            if(!snap.exists()){
+              await modules.firestore.setDoc(userRef, { username: u.displayName || u.email, role: 'student', email: u.email, createdAt: modules.firestore.serverTimestamp() })
+            }
+            const data = (await modules.firestore.getDoc(userRef)).data()
+            window.location.href = (data && data.role === 'admin' ? 'admin.html' : '../index.html')
+          }catch(err){ console.error('Google sign-in failed', err); showStatus('Google sign-in failed: '+(err.message||err),'error') }
+        })
+        document.querySelector('.controls').appendChild(googleBtn)
+      })();
+    </script>
+  </body>
+</html>

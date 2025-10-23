@@ -1,259 +1,39 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scan Food — Upload Photo</title>
-  <style>
-    :root{ --bg:#0f1724; --card:#0b1220; --glass: rgba(255,255,255,0.04); --primary:#5cc0ff; --accent:#7b61ff; --muted:#9aa6b2; --success:#6ee7b7; --danger:#ff9aa2 }
-    html,body{height:100%}
-    body{font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#071028 0%, #081425 45%, #071428 100%);color:#e6eef6;margin:0;padding:28px;}
-    .wrap{max-width:1000px;margin:0 auto}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:20px;border-radius:14px;box-shadow:0 10px 40px rgba(3,8,23,0.6);border:1px solid rgba(255,255,255,0.03)}
-    h1{color:var(--primary);margin:0 0 6px;font-weight:600}
-    .muted{color:var(--muted);font-size:14px}
-    .uploader{display:flex;gap:18px;align-items:flex-start;margin-top:16px}
-    .preview{width:280px;height:200px;background:linear-gradient(180deg,#081627,#06202e);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px dashed rgba(255,255,255,0.04);position:relative;transition:transform .18s ease, box-shadow .18s ease}
-    .preview.dragover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,0.6), inset 0 0 60px rgba(123,97,255,0.06)}
-    .preview .placeholder{display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:13px}
-    img.preview-img{max-width:100%;max-height:100%;display:block;border-radius:8px}
-    .controls{flex:1;min-width:300px}
-    input[type=file]{display:block}
-    .btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--primary),var(--accent));color:#042;box-shadow:0 8px 30px rgba(92,192,255,0.08);border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
-    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 12px}
-    .btn.ghost{background:transparent;color:var(--muted);border:none}
-    .results{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-    .result-row{padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.02)}
-    .label{font-weight:700;color:#dff6ff;margin-bottom:8px}
-    .hint{font-size:13px;color:var(--muted)}
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-size:13px;color:var(--muted)}
-    .danger{color:var(--danger);font-weight:700}
-    .success{color:var(--success);font-weight:700}
-    .progress-wrap{margin-top:10px}
-    #progressInner{transition:width .35s ease}
-    @media(max-width:860px){.uploader{flex-direction:column}.preview{width:100%;height:260px}}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Scan Food</h1>
-      <p class="muted">Upload a photo of your food. In the future this will call the OpenAI image analysis API to return dish recognition, nutrient hints, and waste risk. For now a client-side mock analysis is shown.</p>
-
-      <div class="uploader">
-        <div class="preview" id="preview">
-          <div class="placeholder">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h16V8l-6-4H4v16z" stroke="rgba(255,255,255,0.18)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div style="height:8px"></div>
-            <div class="muted">Drop an image here</div>
-            <div class="muted" style="font-size:12px;margin-top:6px">or click to browse</div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <label class="label" for="photo">Choose or take a photo</label>
-          <input id="photo" type="file" accept="image/*" capture="environment" aria-label="Upload or take photo of food">
-          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-            <button class="btn" id="analyzeBtn" disabled aria-disabled="true">Analyze Photo</button>
-            <button class="btn secondary" id="sendServerBtn" disabled>Send to Server</button>
-            <button class="btn secondary" id="downloadJsonBtn" disabled>Download JSON</button>
-            <button class="btn ghost" id="clearBtn">Clear</button>
-          </div>
-          <p class="hint" style="margin-top:10px">Tip: use a well-lit, top-down photo of the plate for better results. The page will resize/compress images before analysis.</p>
-
-          <div class="progress-wrap">
-            <label class="small">Analysis Progress</label>
-            <div style="margin-top:6px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px">
-              <div id="progressBar" style="height:12px;border-radius:6px;background:rgba(255,255,255,0.02);overflow:hidden"><div id="progressInner" style="height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--accent))"></div></div>
-              <div id="progressText" class="muted small" style="margin-top:8px">Idle</div>
-            </div>
-          </div>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scan Food — OCA</title>
+    <style>:root{--bg:#f6f7fb;--card:#fff;--accent:#2b6df6;--muted:#6b7280;--max:1100px}*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;background:var(--bg);color:#111}.container{max-width:var(--max);margin:0 auto;padding:1rem}.site-header{background:#fff;border-bottom:1px solid #e6e9ef}.header-inner{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}.brand{font-weight:700;color:var(--accent);text-decoration:none}.main-nav a{margin-left:1rem;color:#111;text-decoration:none;font-size:0.95rem}.main-nav .admin-link{background:#111;color:#fff;padding:0.35rem 0.6rem;border-radius:6px}.hero{padding:3rem 1rem;text-align:center}.hero h1{margin:0 0 0.5rem;font-size:2rem}.lead{color:var(--muted);margin-bottom:1rem}.cta-row .btn{display:inline-block;margin:0.25rem 0.5rem;padding:0.6rem 1rem;border-radius:8px;text-decoration:none}.btn{background:var(--accent);color:#fff}.btn.outline{background:transparent;border:1px solid #cbd5ff;color:var(--accent)}.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;padding:1rem}.card{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 6px 18px rgba(24,39,75,0.06)}.card h2{margin-top:0}.site-footer{padding:1rem 0;margin-top:2rem;text-align:center;color:var(--muted)}@media(min-width:720px){.hero h1{font-size:2.6rem}}</style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="../index.html">OCA Cafeteria</a>
+        <nav class="main-nav">
+          <a href="scan_food.html">Scan Food</a>
+          <a href="smart_menu.html">Smart Menu</a>
+          <a href="waste_tracker.html">Waste Tracker</a>
+          <a href="student_feedback.html">Feedback</a>
+          <a href="admin.html" class="admin-link">Admin</a>
+        </nav>
       </div>
+    </header>
 
-      <div class="results" id="results" aria-live="polite"></div>
+    <main class="container">
+      <h1>Scan Food</h1>
+      <p class="lead">This page will host the scanning tool. For now it's a placeholder demonstrating layout and navigation.</p>
 
-      <details style="margin-top:12px">
-        <summary>Developer notes: wiring to OpenAI</summary>
-        <div style="margin-top:8px" class="muted small">For security and quota reasons you should call the OpenAI API from a server. Example server flow:
-          <ol>
-            <li>Client uploads the image to your server (multipart/form-data).</li>
-            <li>Server forwards the image (or its URL) to the OpenAI image analysis endpoint, using your secret API key.</li>
-            <li>Server parses the OpenAI response and returns a compact JSON summary to the client.</li>
-          </ol>
-          Below is a minimal Node/Express + multer example (conceptual). Replace <code>process.env.OPENAI_KEY</code> usage with your secure configuration and implement appropriate error handling and rate limiting.
-          <pre style="background:#f6f8fb;padding:8px;border-radius:6px">// server.js (express + multer)
-const express = require('express');
-const multer = require('multer');
-const fetch = require('node-fetch');
-const upload = multer({ dest: 'uploads/' });
-const app = express();
+      <section class="card">
+        <h2>Scan (placeholder)</h2>
+        <p>In a full implementation you'd be able to use a camera or upload photos to detect barcodes, read nutritional labels, and save items to inventory.</p>
+      </section>
+    </main>
 
-app.post('/api/analyze', upload.single('photo'), async (req,res)=>{
-  try{
-    const filePath = req.file.path; // path to local file
-    // call OpenAI image analysis endpoint here — this is a placeholder pseudo-call
-    const openaiResp = await fetch('https://api.openai.com/v1/images/analyze', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.OPENAI_KEY}` },
-      body: /* multipart with file or URL */ null
-    });
-    const json = await openaiResp.json();
-    // transform json into a compact summary for the client
-    const summary = { dish: 'parsed dish', nutrition: {}, suggestions: [] };
-    res.json(summary);
-  }catch(err){ res.status(500).json({error: err.message}); }
-});
-
-app.listen(3000);
-</pre>
-          Client-side fetch example:
-          <pre style="background:#f6f8fb;padding:8px;border-radius:6px">const fd = new FormData(); fd.append('photo', file);
-fetch('/api/analyze', { method:'POST', body: fd }).then(r=>r.json()).then(data=>console.log(data));</pre>
-        </div>
-      </details>
-    </div>
-  </div>
-
-  <script>
-    const photo = document.getElementById('photo');
-    const preview = document.getElementById('preview');
-    const previewText = document.getElementById('preview-text');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const results = document.getElementById('results');
-
-  let currentFile = null;
-  let lastAnalysis = null;
-
-    function showPreview(file){
-      preview.classList.remove('dragover');
-      preview.innerHTML = '';
-      if(!file) { preview.appendChild(previewText); analyzeBtn.disabled=true; return; }
-      const img = document.createElement('img'); img.className='preview-img';
-      img.onload = ()=>{ /* nothing */ };
-      img.src = URL.createObjectURL(file);
-      preview.appendChild(img);
-      const caption = document.createElement('div'); caption.className='chip'; caption.style.position='absolute'; caption.style.left='12px'; caption.style.bottom='12px'; caption.style.background='rgba(0,0,0,0.45)'; caption.style.color='#fff'; caption.style.padding='6px 8px'; caption.style.borderRadius='8px'; caption.style.fontSize='13px'; caption.textContent = file.name || 'photo.jpg'; preview.appendChild(caption);
-      analyzeBtn.disabled=false; currentFile = file;
-    }
-
-    // Resize image to a max dimension and return a Blob (JPEG) for uploading/analysis
-    function resizeImage(file, maxSize=1024, quality=0.8){
-      return new Promise((resolve,reject)=>{
-        const img = new Image();
-        img.onload = ()=>{
-          const canvas = document.createElement('canvas');
-          let w = img.width, h = img.height;
-          if(Math.max(w,h) > maxSize){
-            const ratio = maxSize / Math.max(w,h); w = Math.round(w*ratio); h = Math.round(h*ratio);
-          }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
-          canvas.toBlob(blob=>{ resolve(blob); }, 'image/jpeg', quality);
-        };
-        img.onerror = (e)=> reject(e);
-        img.src = URL.createObjectURL(file);
-      });
-    }
-
-    photo.addEventListener('change', (e)=>{ const f = e.target.files && e.target.files[0]; showPreview(f); });
-    clearBtn.addEventListener('click', ()=>{ photo.value=''; currentFile=null; preview.innerHTML=''; preview.appendChild(previewText); results.innerHTML=''; analyzeBtn.disabled=true; });
-
-    function mockAnalyze(file){
-      // More detailed deterministic mock analysis by file size
-      const size = file.size || 0;
-      const seed = size % 6;
-      const dishes = ['Chicken & Rice','Broccoli Stir Fry','Fish Tacos','Tofu Veg Bowl','Mashed Potato','Mixed Salad'];
-      const dish = dishes[seed] || 'Mixed Plate';
-      const ingredientsMap = {
-        'Chicken & Rice':['chicken','rice'],
-        'Broccoli Stir Fry':['broccoli','carrots','rice'],
-        'Fish Tacos':['fish','spinach','tortilla'],
-        'Tofu Veg Bowl':['tofu','kale','quinoa'],
-        'Mashed Potato':['potato','butter'],
-        'Mixed Salad':['lettuce','tomato','cucumber']
-      };
-      const ingredients = ingredientsMap[dish] || ['mixed'];
-      const ingredientConfidence = ingredients.map((ing,i)=>({item:ing,confidence: Math.max(0.45, (0.9 - i*0.12) - (seed*0.03))}));
-      const allergens = ingredients.filter(i=>['fish','peanut','shellfish'].includes(i));
-      const portionEstimate = Math.max(1, Math.round((size % 300 + 200)/250));
-      const nutrition = { calories: 250 + seed*100, protein: 10 + seed*6, carbs: 25 + seed*8, fat: 8 + seed*3 };
-      const wasteRisk = seed >= 3 ? 0.28 + (seed-3)*0.05 : 0.08 + seed*0.02; // mock
-      const suggestions = [];
-      if(wasteRisk > 0.25) suggestions.push('Consider reducing portion size');
-      if(ingredients.includes('broccoli')) suggestions.push('Swap broccoli → carrots to reduce waste');
-      if(ingredients.includes('fish')) suggestions.push('Label with allergens: fish');
-      if(nutrition.calories > 500) suggestions.push('Offer smaller portion or lower-calorie side');
-      return {dish, ingredients: ingredientConfidence, allergens, portionEstimate, nutrition, wasteRisk, suggestions};
-    }
-
-    analyzeBtn.addEventListener('click', async ()=>{
-      if(!currentFile) return;
-      analyzeBtn.disabled = true; analyzeBtn.setAttribute('aria-disabled','true');
-      results.innerHTML = '<div class="result-row">Preparing image...</div>';
-      // resize for upload/analysis
-      try{
-        const blob = await resizeImage(currentFile, 1024, 0.8);
-        // show progress mock
-        progressText.textContent = 'Uploading...'; progressInner.style.width = '20%';
-        await new Promise(r=>setTimeout(r,250));
-        progressInner.style.width = '60%'; progressText.textContent = 'Analyzing (mock)...';
-        await new Promise(r=>setTimeout(r,600));
-        progressInner.style.width = '100%'; progressText.textContent = 'Done';
-
-        const out = mockAnalyze(blob.size ? blob : currentFile);
-        lastAnalysis = out; // store for download/server send
-        results.innerHTML = '';
-        const r = document.createElement('div'); r.className='result-row'; r.innerHTML = `<div class="label">Detected dish</div><div>${out.dish}</div>`;
-        const ing = document.createElement('div'); ing.className='result-row'; ing.innerHTML = `<div class="label">Ingredients (with confidence)</div><ul>` + out.ingredients.map(i=>`<li>${i.item} — ${(i.confidence*100).toFixed(0)}%</li>`).join('') + `</ul>`;
-        const n = document.createElement('div'); n.className='result-row'; n.innerHTML = `<div class="label">Estimated nutrition</div><div>Calories: ${out.nutrition.calories} kcal • Protein: ${out.nutrition.protein} g • Carbs: ${out.nutrition.carbs} g • Fat: ${out.nutrition.fat} g</div>`;
-        const p = document.createElement('div'); p.className='result-row'; p.innerHTML = `<div class="label">Portion estimate</div><div>~${out.portionEstimate} serving(s)</div>`;
-        const w = document.createElement('div'); w.className='result-row'; w.innerHTML = `<div class="label">Estimated waste risk</div><div>${Math.round(out.wasteRisk*100)}%</div>`;
-        const a = document.createElement('div'); a.className='result-row'; a.innerHTML = `<div class="label">Allergens</div><div>${out.allergens.length? out.allergens.join(', '): 'None detected'}</div>`;
-        const s = document.createElement('div'); s.className='result-row'; s.innerHTML = `<div class="label">Suggestions</div><ul>` + out.suggestions.map(x=>`<li>${x}</li>`).join('') + '</ul>';
-        results.appendChild(r); results.appendChild(ing); results.appendChild(n); results.appendChild(p); results.appendChild(w); results.appendChild(a); results.appendChild(s);
-        downloadJsonBtn.disabled = false; sendServerBtn.disabled = false; downloadJsonBtn.style.opacity = 1; sendServerBtn.style.opacity = 1;
-      }catch(err){ results.innerHTML = `<div class="result-row">Analysis failed: ${err.message}</div>`; }
-      analyzeBtn.disabled = false; analyzeBtn.removeAttribute('aria-disabled');
-    });
-
-    // Drag & drop support
-    preview.addEventListener('dragover', (e)=>{ e.preventDefault(); preview.classList.add('dragover'); });
-    preview.addEventListener('dragleave', (e)=>{ e.preventDefault(); preview.classList.remove('dragover'); });
-    preview.addEventListener('drop', (e)=>{ e.preventDefault(); preview.classList.remove('dragover'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) { photo.files = e.dataTransfer.files; showPreview(f); } });
-
-    // progress elements
-    const progressInner = document.getElementById('progressInner');
-    const progressText = document.getElementById('progressText');
-
-    // Download analysis JSON
-    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
-    downloadJsonBtn.addEventListener('click', ()=>{
-      if(!lastAnalysis) return;
-      const data = JSON.stringify(lastAnalysis, null, 2);
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data],{type:'application/json'}));
-      a.download = 'food-analysis.json'; document.body.appendChild(a); a.click(); a.remove();
-    });
-
-    // Mock server send button: POST to /api/analyze (replace with your server)
-    const sendServerBtn = document.getElementById('sendServerBtn');
-    sendServerBtn.addEventListener('click', async ()=>{
-      if(!currentFile) return alert('No image');
-      sendServerBtn.disabled = true; sendServerBtn.textContent = 'Sending...';
-      const fd = new FormData(); fd.append('photo', currentFile, currentFile.name || 'photo.jpg');
-      try{
-        // Replace URL with your server endpoint that calls OpenAI securely
-        const resp = await fetch('/api/analyze', { method:'POST', body: fd });
-        if(!resp.ok) throw new Error('Server returned ' + resp.status);
-        const json = await resp.json();
-        lastAnalysis = json;
-        results.innerHTML = `<div class="result-row">Server analysis returned. See console for details.</div>`;
-        console.log('Server analysis', json);
-      }catch(err){ alert('Send failed: ' + err.message); }
-      sendServerBtn.disabled = false; sendServerBtn.textContent = 'Send to Server';
-    });
-  </script>
-</body>
+    <footer class="site-footer">
+      <div class="container">
+        <small><a href="../index.html">Back to home</a></small>
+      </div>
+    </footer>
+  </body>
 </html>
