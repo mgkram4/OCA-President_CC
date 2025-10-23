@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Admin Dashboard - Manage Users</title>
+			th{font-size:13px;color:var(--muted)}
+			td small{color:var(--muted);display:block}
+			.actions{display:flex;gap:8px}
+			.badge{background:#eef2ff;color:var(--accent);padding:4px 8px;border-radius:999px;font-size:12px}
+			.empty{padding:40px;text-align:center;color:var(--muted)}
+			.flex{display:flex}
+			.space{flex:1}
+
+			/* Modal */
+			.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;padding:24px}
+			.modal{background:var(--card);width:100%;max-width:560px;border-radius:10px;padding:18px}
+			.modal.show{display:block}
+			.form-row{display:flex;gap:10px}
+			.form-group{display:flex;flex-direction:column;margin-bottom:10px;min-width:0}
+			label{font-size:13px;margin-bottom:6px}
+			input,select{font-size:14px}
+			.danger{background:var(--danger);}
+
+			@media (max-width:640px){
+				.controls{flex-direction:column;align-items:stretch}
+				.form-row{flex-direction:column}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<div>
+					<h1>Admin Dashboard</h1>
+					<div style="color:var(--muted);font-size:13px">Manage user accounts and roles</div>
+				</div>
+				<div class="controls">
+					<div class="search card" style="display:flex;align-items:center">
+						<input id="search" type="text" placeholder="Search by name or email" aria-label="Search users" />
+						<button id="clearSearch" class="ghost" title="Clear search">Clear</button>
+					</div>
+					<button id="addUserBtn">+ Add user</button>
+				</div>
+			</header>
+
+			<main>
+				<section class="card" aria-labelledby="users-heading">
+					<h2 id="users-heading" style="font-size:15px;margin:0 0 8px 0">Users</h2>
+					<div id="tableContainer">
+						<table aria-describedby="users-heading" id="usersTable">
+							<thead>
+								<tr>
+									<th style="width:60px">ID</th>
+									<th>Name</th>
+									<th>Email</th>
+									<th style="width:110px">Role</th>
+									<th style="width:160px">Actions</th>
+								</tr>
+							</thead>
+							<tbody id="usersTbody">
+								<!-- rows inserted by JS -->
+							</tbody>
+						</table>
+						<div id="emptyState" class="empty" style="display:none">No users found. Add a new user to get started.</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<!-- Modal -->
+		<div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+			<div class="modal card" role="document" aria-labelledby="modalTitle">
+				<h3 id="modalTitle">Add user</h3>
+				<form id="userForm">
+					<input type="hidden" id="userId" />
+					<div class="form-row">
+						<div class="form-group" style="flex:1">
+							<label for="name">Full name</label>
+							<input id="name" name="name" type="text" required autocomplete="name" />
+						</div>
+						<div class="form-group" style="flex:1">
+							<label for="email">Email</label>
+							<input id="email" name="email" type="email" required autocomplete="email" />
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-group" style="flex:1">
+							<label for="role">Role</label>
+							<select id="role" name="role">
+								<option value="admin">Admin</option>
+								<option value="staff">Staff</option>
+								<option value="student">Student</option>
+							</select>
+						</div>
+						<div class="form-group" style="flex:1">
+							<label for="active">Status</label>
+							<select id="active" name="active">
+								<option value="true">Active</option>
+								<option value="false">Inactive</option>
+							</select>
+						</div>
+					</div>
+
+					<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+						<button type="button" id="cancelBtn" class="ghost">Cancel</button>
+						<button type="submit" id="saveBtn">Save</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+				<script src="/pages/firebase-config-runtime.js"></script>
+				<script type="module">
+					import { initFirebaseModule } from '/pages/firebase-init.module.js';
+					const services = await initFirebaseModule();
+					if(!services){
+						document.body.innerHTML = '<div style="padding:40px">Firebase not configured. Please provide configuration and enable Auth/Firestore.</div>';
+						throw new Error('Firebase not configured');
+					}
+					const { auth, db, modules } = services;
+
+					// Enforce admin-only access
+					modules.auth.onAuthStateChanged(auth, async (user)=>{
+						if(!user){ window.location.href = '/pages/Login.html'; return }
+						try{
+							const doc = await modules.firestore.getDoc(modules.firestore.doc(db, 'users', user.uid))
+							const data = doc.exists() ? doc.data() : null
+							const role = data && data.role ? data.role : (user?.role || 'student')
+							if(role !== 'admin'){
+								alert('You are not authorized to access the admin dashboard.');
+								window.location.href = '/index.html';
+								return
+							}
+							await loadAndRender()
+						}catch(e){ console.error('Failed to verify admin status', e); alert('Failed to verify admin status'); window.location.href = '/pages/Login.html' }
+					})
+
+					const usersTbody = document.getElementById('usersTbody')
+					const emptyState = document.getElementById('emptyState')
+					const searchInput = document.getElementById('search')
+					const clearSearchBtn = document.getElementById('clearSearch')
+					const addUserBtn = document.getElementById('addUserBtn')
+					const modalBackdrop = document.getElementById('modalBackdrop')
+					const modalTitle = document.getElementById('modalTitle')
+					const userForm = document.getElementById('userForm')
+
+					function escapeHtml(s){return String(s||'').replace(/[&<>\"'']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+					function cap(s){return (s||'').charAt(0).toUpperCase()+ (s||'').slice(1)}
+
+					async function loadAndRender(){
+						const q = (searchInput.value||'').trim().toLowerCase()
+						const snap = await modules.firestore.getDocs(modules.firestore.collection(db, 'users'))
+						let list = snap.docs.map(d=>({id:d.id, ...d.data()}))
+						if(q) list = list.filter(u=> (u.username||u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
+						renderFirestore(list)
+					}
+
+					function renderFirestore(list){
+						usersTbody.innerHTML = ''
+						if(list.length===0){ emptyState.style.display='block'; document.getElementById('usersTable').style.display='none'; return }
+						emptyState.style.display='none'; document.getElementById('usersTable').style.display='table'
+						list.forEach((u,idx)=>{
+							const tr = document.createElement('tr')
+							tr.innerHTML = `
+								<td><div style="font-weight:600">${idx+1}</div></td>
+								<td><div>${escapeHtml(u.username||u.name||'')}</div><small>${u.email||''}</small></td>
+								<td><div>${escapeHtml(u.email||'')}</div></td>
+								<td><div class="badge">${escapeHtml(cap(u.role||'student'))}</div></td>
+								<td>
+									<div class="actions">
+										<button class="ghost" data-action="promote" data-id="${u.id}">Promote</button>
+										<button class="ghost" data-action="demote" data-id="${u.id}">Demote</button>
+										<button class="ghost" data-action="delete" data-id="${u.id}">Delete</button>
+									</div>
+								</td>
+							`
+							usersTbody.appendChild(tr)
+						})
+					}
+
+					// Events
+					addUserBtn.addEventListener('click',()=>openModal('add'))
+					clearSearchBtn.addEventListener('click',()=>{searchInput.value='';loadAndRender();searchInput.focus()})
+					searchInput.addEventListener('input', ()=> loadAndRender())
+
+					// Modal helpers
+					function openModal(mode='add', user){
+						modalBackdrop.style.display='flex'
+						modalBackdrop.setAttribute('aria-hidden','false')
+						modalBackdrop.querySelector('input,select,textarea').focus()
+						if(mode==='add'){
+							modalTitle.textContent='Add user'
+							userForm.reset(); document.getElementById('userId').value=''
+						}else{
+							modalTitle.textContent='Edit user'
+							document.getElementById('userId').value=user.id
+							document.getElementById('name').value=user.name||user.username
+							document.getElementById('email').value=user.email
+							document.getElementById('role').value=user.role||'student'
+							document.getElementById('active').value=String(!!user.active)
+						}
+					}
+					function closeModal(){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true') }
+
+					// Form submit: write to Firestore
+					userForm.addEventListener('submit', async (e)=>{
+						e.preventDefault()
+						const id = document.getElementById('userId').value
+						const name = document.getElementById('name').value.trim()
+						const email = document.getElementById('email').value.trim()
+						const role = document.getElementById('role').value
+						const active = document.getElementById('active').value === 'true'
+						if(!name || !email){ alert('Please provide name and email'); return }
+						try{
+							if(id){ await modules.firestore.setDoc(modules.firestore.doc(db, 'users', id), {username:name,email,role,active},{merge:true}) }
+							else{ const docRef = modules.firestore.doc(modules.firestore.collection(db, 'users')); await modules.firestore.setDoc(docRef, {username:name,email,role,active,createdAt:modules.firestore.serverTimestamp()}) }
+							closeModal(); loadAndRender(); return
+						}catch(e){ console.error('Failed to write to Firestore', e); alert('Failed to save to Firestore. Check console.'); return }
+					})
+
+					// Table delegation for actions
+					usersTbody.addEventListener('click', async (e)=>{
+						const btn = e.target.closest('button'); if(!btn) return
+						const action = btn.dataset.action; const id = btn.dataset.id
+						if(action==='edit'){
+							const doc = await modules.firestore.getDoc(modules.firestore.doc(db, 'users', id)); openModal('edit', {id:doc.id,...doc.data()}); return
+						}
+						if(action==='delete'){
+							if(!confirm('Delete this user? This cannot be undone.')) return
+							await modules.firestore.deleteDoc(modules.firestore.doc(db, 'users', id)).catch(e=>console.error(e)); loadAndRender(); return
+						}
+						if(action==='promote' || action==='demote'){
+							const newRole = (action==='promote') ? 'admin' : 'student'
+							await modules.firestore.setDoc(modules.firestore.doc(db, 'users', id), {role:newRole},{merge:true}); loadAndRender(); return
+						}
+					})
+
+					// Cancel modal
+					document.getElementById('cancelBtn').addEventListener('click', closeModal)
+
+					// Close modal when clicking backdrop
+					modalBackdrop.addEventListener('click', (e)=>{if(e.target===modalBackdrop) closeModal()})
+
+					// Keyboard: Esc to close
+					document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal() })
+
+				</script>
+	</body>
+</html>
+
